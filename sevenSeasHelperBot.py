@@ -19,11 +19,11 @@ bot = telebot.TeleBot(API_KEY)
 def ficha_markup():
     markup = InlineKeyboardMarkup()
     markup.row_width = 2
-    markup.add(InlineKeyboardButton("Adicionar PH", callback_data="cb_ph"),
-               InlineKeyboardButton('Adicionar Fortuna', callback_data='cb_fortuna'),
-               InlineKeyboardButton("Adicionar Aposta", callback_data="cb_aposta"),
-               InlineKeyboardButton("Ordem de Iniciativa", callback_data="cb_iniciativa"),
-               InlineKeyboardButton("Ficha", callback_data="cb_ficha")
+    markup.add(InlineKeyboardButton('Adicionar PH ⭐️', callback_data='cb_ph'),
+               InlineKeyboardButton('Adicionar Fortuna 💰', callback_data='cb_fortuna'),
+               InlineKeyboardButton('🚧Adicionar Aposta🚧', callback_data='cb_aposta'),
+               InlineKeyboardButton('🚧Ordem de Iniciativa🚧', callback_data='cb_iniciativa'),
+               InlineKeyboardButton('Ficha 📰', callback_data='cb_ficha')
                )
     return markup
 def ficha_markup_mestre():
@@ -31,8 +31,8 @@ def ficha_markup_mestre():
     markup = InlineKeyboardMarkup()
     markup.row_width = 2
     markup.add(InlineKeyboardButton('Resetar PJs', callback_data='cb_reset'),
-               InlineKeyboardButton("Dar PH e Fortuna", callback_data="cb_give"),
-               InlineKeyboardButton('Jogadores', callback_data="cb_jogadores")
+               InlineKeyboardButton('🚧Dar PH e Fortuna🚧', callback_data='cb_give'),
+               InlineKeyboardButton('Jogadores', callback_data='cb_jogadores')
                )
     return markup
 def reset_markup():
@@ -74,9 +74,12 @@ def tecladoNum_markup():
 imageHandler = ImageDataBase()
 playerHandler = Jogador()
 
-def enviarForce(nome, text):
+#||------------------------||
+#||       Funções          ||
+#||------------------------||
+def enviarMensagem(nome, texto):
     playerID = playerHandler.getPlayerID(nome)
-    bot.send_message(playerID, text)
+    bot.send_message(playerID, texto)
 
 #||------------------------||
 #||         HELP           ||
@@ -85,15 +88,20 @@ def enviarForce(nome, text):
 def greet(message): 
 
     bot.reply_to(message, '''
-A única função deste Bot, até o momento, é agrupar as suas apostas. 
+Funções do bot:
+<b>☆Agrupar dados em apostas☆</b>
 
-Para isso, <b>mande um conjunto de números separados por um espaço</b>, ex: "1 1 9 8 7". <i>Números negativos viram positivos, e letras são desconsideradas</i>.
+-Mande um conjunto de números <u>separados por um espaço</u>, 
+<i>ex: "1 1 9 8 7". Números negativos viram positivos, e letras são desconsideradas</i>.
+-Se quiser <u>mudar o limite</u> coloque um <u>"/X"</u> na mensagem, 
+<i>ex: "5 5 5 /15", o limite padrão é 10</i>.
+-Caso queira <u>adicionar um bônus</u> em todos os dados rolados, coloque um <u>"*X"</u> na mensagem, <i>por exemplo: "1 3 5 4 10 *2" -> "3 5 7 6 12"</i>.
+<i>A ordem dos fatores não altera o produto, <b>mas o primeiro número não pode conter letras, "/" ou "*"</b> </i>
 
-O <b>limite padrão é 10</b>, mas se quiser mudar <b>coloque um "/X" na mensagem</b>, <i>por exemplo: "5 5 5 /15"</i>.
 
-Caso queira <b>adicionar um bônus em todos os dados</b> rolados coloque um <b>"*X"</b> na mensagem, <i>por exemplo: "1 3 5 4 10 *2" -> "3 5 7 6 12"</i>.
+<b>☆Controlar sua Ficha☆</b>
 
-<i>A ordem dos fatores não altera o produto, mas o primeiro número não pode conter letras, "/" ou "*" </i>
+mande um "/f" no chat, é bem intuitivo.
     ''', parse_mode='HTML')
 
 #||------------------------||
@@ -153,7 +161,7 @@ def greet(message):
         '''try:'''
         rename = imageHandler.renomearTag(mensagem[2], mensagem[3])
         if rename:
-            bot.send_message(message.chat.id, "renomeado com sucesso")
+            bot.send_message(message.chat.id, 'renomeado com sucesso')
         elif not rename:
             bot.send_message(message.chat.id, 'não foi possível mudar a tag')
         '''except:
@@ -167,24 +175,6 @@ def greet(message):
                 bot.send_photo(message.chat.id, 'https://docs.google.com/uc?id='+find, caption=f'{mensagem[1]}')
         except: bot.send_message(message.chat.id, 'ERROR 004')
     pass
-
-
-@bot.message_handler(commands=['getID'])
-def greet(message):
-    bot.send_message(message.chat.id, message.chat.id)
-
-#||------------------------||
-#||      ÁREA DA FICHA     ||
-#||------------------------||
-@bot.message_handler(commands=['f'])
-def wellcome(message):
-    pass
-    jogadores = playerHandler.getFichasCriadas()
-    if message.chat.id in jogadores: 
-        bot.send_message(message.chat.id, 'Bem-vinda/Bem-vindo à area de ficha do bot! O que deseja fazer?', reply_markup=ficha_markup())
-    else:
-        playerHandler.criarFicha(message)
-        bot.send_message(message.chat.id, 'Sua ficha foi criada, e agora?', reply_markup=ficha_markup())
 
 #------------------------
 #    CALL BACK MANAGER
@@ -260,6 +250,18 @@ def atualizarFortuna(message):
     return bot.send_message(message.from_user.id, f'<b>Fortuna:</b> {data[0]} → {data[1]}', 'HTML', reply_markup=ficha_markup())
     
 #||------------------------||
+#||      ÁREA DA FICHA     ||
+#||------------------------||
+@bot.message_handler(commands=['f'])
+def wellcome(message):
+    jogadores = playerHandler.getFichasCriadas()
+    if message.chat.id in jogadores: 
+        bot.send_message(message.chat.id, 'Bem-vinda/Bem-vindo à area de ficha do bot! O que deseja fazer?', reply_markup=ficha_markup())
+    else:
+        playerHandler.criarFicha(message)
+        bot.send_message(message.chat.id, 'Sua ficha foi criada, e agora?', reply_markup=ficha_markup())
+
+#||------------------------||
 #||     ÁREA DO MESTRE     ||
 #||------------------------||
 @bot.message_handler(commands=['m'])
@@ -280,10 +282,11 @@ def callback_mestre(call):
         bot.send_message(call.from_user.id, 'Quais jogadores deseja resetar? ("all" para todos)', reply_markup=player_list_markup())
         #bot.register_next_step_handler(msg, resetHandler)
     elif  call.data == 'cb_give':
-        pass
         callback_mestre.listaJogadores = []
         
-    elif  call.data == 'cb_jogadores':pass
+    elif  call.data == 'cb_jogadores':
+        message = playerHandler.consultarJogadores(call)
+        bot.send_message(call.from_user.id, message, 'HTML', reply_markup=ficha_markup_mestre())
     else: return ContinueHandling()
 
 #------------------------
@@ -319,6 +322,10 @@ def callback_reset(call):
         print('LISTAJOGADORES:',callback_mestre.listaJogadores)
         txt = playerHandler.resetPJ('fortuna', callback_mestre.listaJogadores)
         bot.send_message(call.from_user.id, txt, 'HTML', reply_markup=ficha_markup_mestre())
+    elif call.data == 'cb_allPlayers':
+        callback_mestre.listaJogadores = playerHandler.getAllNames()
+        bot.send_message(call.from_user.id, 'Todos os jogadores foram adicionados')
+        pass
     
     ##SELECIONANDO JOGADORES DO RESET
     elif call.data in playerHandler.getAllNames():
@@ -355,7 +362,7 @@ def rolagem(message):
 
             tratarResposta(mensagemCortada, conjuntos, dadosRestantes, bot, message)
             if message.from_user.id == 5266515916:
-                mensagens = ["Te amo, xuxu", "MANDA A BRAZA AMOR", "ARROMBA O CU DESSES BRUTAMONTES", "Te amo mtmtmt", "(≧ω≦)", "Quer me foder com esse tanto de aposta? (╹◡╹)凸", "Lembra de tomar agua ^^", "Eita, olha q gatinha", "(adiciona mais uma aposta aí, mas n conta pra ngm 😈)", "(✿◠‿◠)ヽ(´▽｀)ノ", "Espero que esteja se divertindo ^^", "vc é foda (☞ﾟ∀ﾟ)☞", "＼（＾○＾）人（＾○＾）／ LET'S GOOOOOOOOOOOOO", "Te amo S2", "Amo mtmtmt vc", "Sheeeeesh, como vou prestar atenção no jogo com uma gatinha dessas na mesa?", "(figurinha dos gatos abraçando)", "∑(゜Д゜;) TUDO ISSO?!", "~(^з^)-", "(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧", "Te amo mais q o Charlie", "(づ｡◕‿‿◕｡)づ", f"Você sabia? existem {len(mensagens)} diferentes, será que já repetiu alguma?", "Sem mensagens, só beijinhos", "Te amo tanto que todo fim de seção eu coloco umas mensagens extras, será que um dia vc vai ler todas?", "Se você receber esta mensagem na seção, eu te devo uma salada do tasty (resgatável apenas com print)", 'Como vão os alfaces?', 'Te amo amor ^^']
+                mensagens = ['Te amo, xuxu', 'MANDA A BRAZA AMOR', 'ARROMBA O CU DESSES BRUTAMONTES', 'Te amo mtmtmt', '(≧ω≦)', 'Quer me foder com esse tanto de aposta? (╹◡╹)凸', 'Lembra de tomar agua ^^', 'Eita, olha q gatinha', '(adiciona mais uma aposta aí, mas n conta pra ngm 😈)', '(✿◠‿◠)ヽ(´▽｀)ノ', 'Espero que esteja se divertindo ^^', 'vc é foda (☞ﾟ∀ﾟ)☞', '＼（＾○＾）人（＾○＾）／ LET\'S GOOOOOOOOOOOOO', 'Te amo S2', 'Amo mtmtmt vc', 'Sheeeeesh, como vou prestar atenção no jogo com uma gatinha dessas na mesa?', '(figurinha dos gatos abraçando)', '∑(゜Д゜;) TUDO ISSO?!', '~(^з^)-', '(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧', 'Te amo mais q o Charlie', '(づ｡◕‿‿◕｡)づ', f'Você sabia? existem {len(mensagens)} diferentes, será que já repetiu alguma?', 'Sem mensagens, só beijinhos', 'Te amo tanto que todo fim de seção eu coloco umas mensagens extras, será que um dia vc vai ler todas?', 'Se você receber esta mensagem na seção, eu te devo uma salada do tasty (resgatável apenas com print)', 'Como vão os alfaces?', 'Te amo amor ^^']
             bot.send_message(message.chat.id, mensagens[randint(0, len(mensagens))])
         except: pass
     
@@ -365,9 +372,13 @@ def rolagem(message):
 bot.infinity_polling()
 
 
-
+'''@bot.message_handler(commands=['getID'])
+def greet(message):
+    bot.send_message(message.chat.id, message.chat.id)
+'''
 '''Fazer o treco de apostas,
    'Jogadores' e 'Dar PH e Fortuna',
    Adicionar e Retirar Mestres
-   Nome do PJ, editar nome do PJ'''
+   Nome do PJ, editar nome do PJ
+   INICIATIVA'''
 '''☆'''

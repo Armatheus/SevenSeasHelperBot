@@ -105,9 +105,8 @@ class Jogador():
     #||------------------------||
     #||    FUNC DE CONSULTA    ||
     #||------------------------||
-    def consultarJogadores(self, message):
-        mensagem = "JOGADORES:"
-        if message.chat.id in self.mestreID:
+    def consultarJogadores(self, call):
+        if call.from_user.id in self.mestreID:
             for id in self.getIDs():
                 ficha = pjdb.get(doc_id=id)
                 mensagem = mensagem + f'''\n
