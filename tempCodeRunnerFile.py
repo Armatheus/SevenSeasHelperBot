@@ -1,1 +1,1 @@
-atualizarFortuna
+apostas
