@@ -1,11 +1,12 @@
 import os
-from dotenv import load_dotenv
-import telebot
-from generalFunctions import *
 from random import randint
+
+import telebot
 from dataBaseFunctions import *
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from dotenv import load_dotenv
+from generalFunctions import *
 from telebot.handler_backends import ContinueHandling
+from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 load_dotenv()
 
@@ -31,7 +32,7 @@ def ficha_markup_mestre():
     markup = InlineKeyboardMarkup()
     markup.row_width = 2
     markup.add(InlineKeyboardButton('Resetar PJs', callback_data='cb_reset'),
-               InlineKeyboardButton('🚧Dar PH e Fortuna🚧', callback_data='cb_give'),
+               InlineKeyboardButton('Dar PH e Fortuna', callback_data='cb_give'),
                InlineKeyboardButton('Jogadores', callback_data='cb_jogadores')
                )
     return markup
@@ -39,9 +40,9 @@ def reset_markup():
     pass
     markup = InlineKeyboardMarkup()
     markup.row_width = 2
-    markup.add(InlineKeyboardButton('Pontos Heróicos', callback_data='cb_resetPH'),
-               InlineKeyboardButton('Fortuna', callback_data="cb_resetFortuna"),
-               InlineKeyboardButton('Tudo', callback_data="cb_resetAll")
+    markup.add(InlineKeyboardButton('Pontos Heróicos ⭐️', callback_data='cb_resetPH'),
+               InlineKeyboardButton('Fortuna 💰', callback_data='cb_resetFortuna'),
+               InlineKeyboardButton('Tudo', callback_data='cb_resetAll')
                )
     return markup
 def player_list_markup():
@@ -53,23 +54,31 @@ def player_list_markup():
     markup.add(InlineKeyboardButton('Todos', callback_data='cb_allPlayers'),
                InlineKeyboardButton('Fim', callback_data='cb_fim'))
     return markup
-def tecladoNum_markup():
+def player_givelist_markup():
+    listaPlayers = playerHandler.getAllNames()
     markup = InlineKeyboardMarkup()
-    markup.row_width = 3
-    for i in range(3):
-        markup.add(
-        InlineKeyboardButton(((i*3)+1), callback_data=f'num_{(i*3)+1}'),
-        InlineKeyboardButton(((i*3)+2), callback_data=f'num_{(i*3)+2}'),
-        InlineKeyboardButton(((i*3)+3), callback_data=f'num_{(i*3)+3}'),
-        )
-    markup.add(
-    InlineKeyboardButton('Apagar', callback_data='num_apagar'),
-    InlineKeyboardButton('0', callback_data='num_0'),
-    InlineKeyboardButton('Fim', callback_data='num_fim'),
-    InlineKeyboardButton('Cancelar', callback_data='num_cancelar'),
-    )
+    markup.row_width = 1
+    for nome in listaPlayers:
+        markup.add(InlineKeyboardButton(nome, callback_data=nome))
+    markup.add(InlineKeyboardButton('Todos', callback_data='cb_giveAllPlayers'),
+               InlineKeyboardButton('Fim', callback_data='cb_giveFim'))
     return markup
-
+def give_markup():
+    markup = InlineKeyboardMarkup()
+    markup.row_width = 2
+    markup.add(InlineKeyboardButton('PH ⭐️', callback_data='cb_givePH'),
+               InlineKeyboardButton('Fortuna 💰', callback_data='cb_giveFortuna')
+               )
+    return markup
+'''def player_list_markup():
+    listaPlayers = playerHandler.getAllNames()
+    markup = InlineKeyboardMarkup()
+    markup.row_width = 1
+    for nome in listaPlayers:
+        markup.add(InlineKeyboardButton(nome, callback_data=nome))
+    markup.add(InlineKeyboardButton('Todos', callback_data='cb_allPlayers'),
+               InlineKeyboardButton('Fim', callback_data='cb_fim'))
+    return markup'''
 #Handlers & Funções Gerais
 imageHandler = ImageDataBase()
 playerHandler = Jogador()
@@ -193,11 +202,9 @@ def callback_player(call):
     elif call.data == 'cb_ph':
         msg = bot.send_message(call.from_user.id, 'Quantos pontos quer adicionar? (números negativos são aceitos)')
         bot.register_next_step_handler(msg, atualizarPH)
-        pass
     elif call.data == 'cb_fortuna':
         msg = bot.send_message(call.from_user.id, 'Quantos pontos quer adicionar? (números negativos são aceitos)')
         bot.register_next_step_handler(msg, atualizarFortuna)
-        pass
     elif call.data == 'cb_aposta' or call.data == 'cb_iniciativa': bot.send_message(call.from_user.id, '''Função ainda não disponível 
 ┐(‘～`；)┌''', reply_markup=ficha_markup())
 
@@ -216,10 +223,6 @@ def callback_player(call):
             callback_player.quantidade.pop()
             quantidadeStr = quantidadeStr()
             bot.edit_message_text(chat_id=call.from_user.id, text=quantidadeStr, message_id=callback_player.mensagemID)
-        
-
-        pass
-        
         return ContinueHandling()
 
 #------------------------
@@ -282,35 +285,15 @@ def callback_mestre(call):
         bot.send_message(call.from_user.id, 'Quais jogadores deseja resetar? ("all" para todos)', reply_markup=player_list_markup())
         #bot.register_next_step_handler(msg, resetHandler)
     elif  call.data == 'cb_give':
-        callback_mestre.listaJogadores = []
-        
+        callback_mestre.listaJogadores = []   
+        bot.send_message(call.from_user.id, 'Quais jogadores deseja resetar? ("all" para todos)', reply_markup=player_givelist_markup())
     elif  call.data == 'cb_jogadores':
         message = playerHandler.consultarJogadores(call)
         bot.send_message(call.from_user.id, message, 'HTML', reply_markup=ficha_markup_mestre())
-    else: return ContinueHandling()
-
-#------------------------
-#    Funções de mestre  
-#------------------------
-
-def resetHandler(message):
     
-    if message.text == 'all':
-        resetHandler.listaJogadores = playerHandler.getAllNames()
-    else:
-        try:
-            resetHandler.listaJogadores = message.text.split('')
-        except:
-            resetHandler.listaJogadores = [message.text]
-    bot.send_message(message.chat.id, 'Quais atributos mudar?', reply_markup=reset_markup())
-
-#------
-#  subcallhandler
-#------
-@bot.callback_query_handler(func=lambda call: True)
-def callback_reset(call):
-    ##SELECIONANDO ATRIBUTO DO RESET
-    if call.data == 'cb_resetPH':
+    
+    #SELECIONANDO ATRIBUTO DO RESET
+    elif call.data == 'cb_resetPH':
         print('LISTAJOGADORES:',callback_mestre.listaJogadores)
         txt = playerHandler.resetPJ('ph', callback_mestre.listaJogadores)
         bot.send_message(call.from_user.id, txt, 'HTML', reply_markup=ficha_markup_mestre())
@@ -322,26 +305,70 @@ def callback_reset(call):
         print('LISTAJOGADORES:',callback_mestre.listaJogadores)
         txt = playerHandler.resetPJ('fortuna', callback_mestre.listaJogadores)
         bot.send_message(call.from_user.id, txt, 'HTML', reply_markup=ficha_markup_mestre())
-    elif call.data == 'cb_allPlayers':
-        callback_mestre.listaJogadores = playerHandler.getAllNames()
-        bot.send_message(call.from_user.id, 'Todos os jogadores foram adicionados')
-        pass
     
-    ##SELECIONANDO JOGADORES DO RESET
+    #SELECIONANDO JOGADORES DO RESET
     elif call.data in playerHandler.getAllNames():
         callback_mestre.listaJogadores.append(call.data)
         bot.send_message(call.from_user.id, call.data+' adicionado')
-    elif call.data == 'cb_all':
-        callback_mestre.listaJogadores = playerHandler.getAllNames()
-        bot.send_message(call.from_user.id, 'Quais atributos mudar?', reply_markup=reset_markup())
     elif call.data == 'cb_fim':
         bot.send_message(call.from_user.id, 'Quais atributos mudar?', reply_markup=reset_markup())
+    elif call.data == 'cb_allPlayers':
+        callback_mestre.listaJogadores = playerHandler.getAllNames()
+        bot.send_message(call.from_user.id, 'Todos os jogadores foram adicionados')
+    
+    #SELECIONANDO JOGADORES DO GIVE
+    elif call.data == 'cb_giveFim':
+        bot.send_message(call.from_user.id, 'Qual atributo mudar?', reply_markup=give_markup())
+    elif call.data == 'cb_giveAllPlayers':
+        callback_mestre.listaJogadores = playerHandler.getAllNames()
+        bot.send_message(call.from_user.id, 'Todos os jogadores foram adicionados')
+    
+    #SEKECUINANDO O ATRIBUTO DO GIVE
+    elif call.data == 'cb_givePH':
+        msg = bot.send_message(call.from_user.id, 'Quantos pontos quer adicionar? (números negativos são aceitos)')
+        bot.register_next_step_handler(msg, givePH)
+    elif call.data == 'cb_giveFortuna':
+        msg = bot.send_message(call.from_user.id, 'Quantos pontos quer adicionar? (números negativos são aceitos)')
+        bot.register_next_step_handler(msg, giveFortuna)
+    
+
 
     else: return ContinueHandling()
+    #else: return ContinueHandling()
 
+#------------------------
+#    Funções de mestre  
+#------------------------
+
+def resetHandler(message):
+    try:
+        resetHandler.listaJogadores = message.text.split('')
+    except:
+        resetHandler.listaJogadores = [message.text]
+    bot.send_message(message.chat.id, 'Quais atributos mudar?', reply_markup=reset_markup())
+def givePH(message):
+    print(callback_mestre.listaJogadores)
+    quantia = int(message.text)
+    playerHandler.give(callback_mestre.listaJogadores, 'ph', quantia)
+    bot.send_message(message.chat.id, 'Jogadores atualizados')
+    for player in callback_mestre.listaJogadores:
+        enviarMensagem(player, f"O mestre te deu {quantia} PH⭐️!")
+def giveFortuna(message):
+    print(callback_mestre.listaJogadores)
+    quantia = int(message.text)
+    playerHandler.give(callback_mestre.listaJogadores, 'fortuna', quantia)
+    bot.send_message(message.chat.id, 'Jogadores atualizados')
+    for player in callback_mestre.listaJogadores:
+        enviarMensagem(player, f"O mestre te deu {quantia} Fortuna💰!")
+#||------------------------||
+#||         Get ID         ||
+#||------------------------||
+@bot.message_handler(commands=['getID'])
+def greet(message):
+    bot.send_message(message.chat.id, message.chat.id)
 
 #||------------------------||
-#||    CALC DE APOSTAS     ||
+#||    Calc de apostas     ||
 #||------------------------||
 @bot.message_handler(func=lambda message: True)
 def rolagem(message):
@@ -372,12 +399,8 @@ def rolagem(message):
 bot.infinity_polling()
 
 
-'''@bot.message_handler(commands=['getID'])
-def greet(message):
-    bot.send_message(message.chat.id, message.chat.id)
-'''
 '''Fazer o treco de apostas,
-   'Jogadores' e 'Dar PH e Fortuna',
+   'Dar PH e Fortuna',
    Adicionar e Retirar Mestres
    Nome do PJ, editar nome do PJ
    INICIATIVA'''

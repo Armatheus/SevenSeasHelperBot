@@ -107,13 +107,14 @@ class Jogador():
     #||------------------------||
     def consultarJogadores(self, call):
         if call.from_user.id in self.mestreID:
+            mensagem = ''
             for id in self.getIDs():
                 ficha = pjdb.get(doc_id=id)
-                mensagem = mensagem + f'''\n
+                mensagem = mensagem + f'''
 <b>Jogador:</b> {ficha['rg']['jogadorNome']}
   <b>PH:</b> {ficha['status']['ph']}
   <b>Fortuna</b> {ficha['status']['fortuna']}
-                '''
+'''
         else: 'você não tem permissão para ver os dados de todos os jogadores'
         return mensagem
 
@@ -172,22 +173,21 @@ class Jogador():
         print('mensagem:', mensagem)
         return mensagem 
             
-    def give(self, message, nome, atributo, quantia):
-        ficha = pjdb.get(jogador.rg.jogadorNome == nome)
-        if message.chat.id in self.mestreID:
-            if atributo in ['ph','hp','h','p']:
+    def give(self, nomes, atributo, quantia):
+        for nome in nomes:
+            ficha = pjdb.get(jogador.rg.jogadorNome == nome)
+            if atributo == 'ph':
                 #phInicial = ficha['ph']['inicial']
                 Novo = ficha['status']['ph'] + int(quantia)
 
                 pjdb.update({'status': {'ph': Novo, 'fortuna': ficha['status']['fortuna']}}, doc_ids=[ficha.doc_id])
-                return f'O mestre te enviou {quantia} Pontos Heróicos!'
-            elif atributo in ['fortuna','f']:
+                #return f'O mestre te enviou {quantia} Pontos Heróicos!'
+            elif atributo == 'fortuna':
                 #phInicial = ficha['ph']['inicial']
                 Novo = ficha['status']['fortuna'] + quantia
 
                 pjdb.update({'status': {'ph': ficha['status']['ph'], 'fortuna': Novo}}, doc_ids=[ficha.doc_id])
-                return f'O mestre te enviou {quantia} pontos de Fortuna!'
-        else: return False
+                #return f'O mestre te enviou {quantia} pontos de Fortuna!'
 
 
     #||------------------------||
