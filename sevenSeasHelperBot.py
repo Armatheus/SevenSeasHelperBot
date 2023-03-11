@@ -31,33 +31,23 @@ def markup_jogador():
 def markup_mestre():
     markup = InlineKeyboardMarkup()
     markup.row_width = 2
-    markup.add(InlineKeyboardButton('Resetar PJs', callback_data='cb_reset'),
-               InlineKeyboardButton('Dar PH e Fortuna', callback_data='cb_give'),
-               InlineKeyboardButton('Iniciativa', callback_data='cb_markupIniciativa'),
-
-               InlineKeyboardButton('Jogadores', callback_data='cb_jogadores'),
+    markup.add(InlineKeyboardButton('Resetar PJs ♻️', callback_data='cb_reset'),
+               InlineKeyboardButton('Dar PH e Fortuna 🎁', callback_data='cb_give'),
+               InlineKeyboardButton('Iniciativa 📜', callback_data='cb_markupIniciativa'),
+               InlineKeyboardButton('Jogadores 🏴‍☠️', callback_data='cb_jogadores'),
                )
     return markup
 def markup_iniciativa():
     markup = InlineKeyboardMarkup()
     markup.row_width = 2
-    markup.add(InlineKeyboardButton('Iniciar Iniciativa', callback_data='cb_iniciarIniciativa'),
-               InlineKeyboardButton('Adicionar NPC', callback_data='cb_adicionarNPC'),
-               InlineKeyboardButton('🚧Adicionar Apostas🚧', callback_data='cb_apostasMestre'),
-               InlineKeyboardButton('🚧Iniciativa🚧', callback_data='cb_iniciativaMestre'),
-               InlineKeyboardButton('Voltar', callback_data='cb_voltar'),
+    markup.add(InlineKeyboardButton('Nova Iniciativa ♻️', callback_data='cb_iniciarIniciativa'),
+               InlineKeyboardButton('Adicionar NPC 🏴‍☠️', callback_data='cb_adicionarNPC'),
+               InlineKeyboardButton('Adicionar Apostas 🔥', callback_data='cb_apostasMestre'),
+               InlineKeyboardButton('Ver Iniciativa 📜', callback_data='cb_iniciativaMestre'),
+               InlineKeyboardButton('Voltar 🔙', callback_data='cb_voltar'),
                )
     return markup
 
-def reset_markup():
-    pass
-    markup = InlineKeyboardMarkup()
-    markup.row_width = 2
-    markup.add(InlineKeyboardButton('Pontos Heróicos ⭐️', callback_data='cb_resetPH'),
-               InlineKeyboardButton('Fortuna 💰', callback_data='cb_resetFortuna'),
-               InlineKeyboardButton('Tudo', callback_data='cb_resetAll')
-               )
-    return markup
 def player_list_markup():
     listaPlayers = playerHandler.getAllNames()
     markup = InlineKeyboardMarkup()
@@ -85,7 +75,25 @@ def player_inlist_markup():
     markup.add(InlineKeyboardButton('Todos', callback_data='cb_inAllPlayers'),
                InlineKeyboardButton('Fim', callback_data='cb_inFim'))
     return markup
+def player_apostalist_markup():
+    listaPlayers = computarIniciativa()
+    print(listaPlayers)
+    markup = InlineKeyboardMarkup()
+    markup.row_width = 1
+    for player in listaPlayers:
+        nome = player['nome']
+        markup.add(InlineKeyboardButton(nome, callback_data=f'{nome}_aposta'))
+    return markup
 
+def reset_markup():
+    pass
+    markup = InlineKeyboardMarkup()
+    markup.row_width = 2
+    markup.add(InlineKeyboardButton('Pontos Heróicos ⭐️', callback_data='cb_resetPH'),
+               InlineKeyboardButton('Fortuna 💰', callback_data='cb_resetFortuna'),
+               InlineKeyboardButton('Tudo', callback_data='cb_resetAll')
+               )
+    return markup
 def give_markup():
     markup = InlineKeyboardMarkup()
     markup.row_width = 2
@@ -303,6 +311,8 @@ def wellcome(message):
 #------------------------
 @bot.callback_query_handler(func=lambda call: True)
 def callback_mestre(call):
+    print(computarIniciativa())
+
     if call.data == 'cb_reset':
         callback_mestre.listaJogadores = []
         bot.send_message(call.from_user.id, 'Quais jogadores deseja resetar? ("all" para todos)', reply_markup=player_list_markup())
@@ -323,7 +333,10 @@ def callback_mestre(call):
         msg = bot.send_message(call.from_user.id, 'Menu de Iniciativa', reply_markup=markup_iniciativa())
     elif call.data == 'cb_voltar':
         msg = bot.send_message(call.from_user.id, 'Voltando...', reply_markup=markup_mestre())
-
+    elif call.data == 'cb_iniciativaMestre':
+        bot.send_message(call.from_user.id, 'Iniciativa: \n'+apresentarIniciativa(), reply_markup=markup_iniciativa())
+    elif call.data == 'cb_apostasMestre':
+        msg = bot.send_message(call.from_user.id, 'Qual personagem mudar?', reply_markup=player_apostalist_markup())
     #SELECIONANDO ATRIBUTO DO RESET
     elif call.data == 'cb_resetPH':
         print('LISTAJOGADORES:',callback_mestre.listaJogadores)
@@ -372,7 +385,12 @@ def callback_mestre(call):
         callback_mestre.listaJogadores = playerHandler.getAllNames()
         bot.send_message(call.from_user.id, 'Todos os jogadores foram adicionados')
 
-    #ADICIONANDO UM NOVO NPC
+    #ADICIONANDO APOSTAS
+    elif call.data[-6:] == 'aposta':
+        print('aaaaaa')
+        callback_mestre.nome = str(call.data[:7]) 
+        msg = bot.send_message(call.from_user.id, f'Quantas apostas deseja dar para {callback_mestre.nome}')
+        bot.register_next_step_handler(msg, modificarAposta)
 
     else: return ContinueHandling()
     #else: return ContinueHandling()
@@ -405,7 +423,11 @@ def registrarNPC(message):
     adicionarNPC(message.text)
     txt = apresentarIniciativa()
     bot.send_message(message.chat.id, f'NPC Adicionado: \n {txt}', reply_markup=markup_iniciativa())
-
+def modificarAposta(message):
+    quantidade = message.text
+    print('===',quantidade, callback_mestre.nome)
+    txt = adicionarAposta(callback_mestre.nome, quantidade)
+    bot.send_message(message.chat.id, 'Apostas:\n'+txt, reply_markup=markup_iniciativa())
 
 #||------------------------||
 #||         Get ID         ||
@@ -429,15 +451,16 @@ def rolagem(message):
     else:
         try:
             operacao = int(operacao)
-
             dados, limite = tratarDados(mensagemCortada, bot, message)
-
             conjuntos, dadosRestantes = calcularConjuntos(dados, limite)
-
             tratarResposta(mensagemCortada, conjuntos, dadosRestantes, bot, message)
-            if message.from_user.id == 5266515916:
-                mensagens = ['Te amo, xuxu', 'MANDA A BRAZA AMOR', 'ARROMBA O CU DESSES BRUTAMONTES', 'Te amo mtmtmt', '(≧ω≦)', 'Quer me foder com esse tanto de aposta? (╹◡╹)凸', 'Lembra de tomar agua ^^', 'Eita, olha q gatinha', '(adiciona mais uma aposta aí, mas n conta pra ngm 😈)', '(✿◠‿◠)ヽ(´▽｀)ノ', 'Espero que esteja se divertindo ^^', 'vc é foda (☞ﾟ∀ﾟ)☞', '＼（＾○＾）人（＾○＾）／ LET\'S GOOOOOOOOOOOOO', 'Te amo S2', 'Amo mtmtmt vc', 'Sheeeeesh, como vou prestar atenção no jogo com uma gatinha dessas na mesa?', '(figurinha dos gatos abraçando)', '∑(゜Д゜;) TUDO ISSO?!', '~(^з^)-', '(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧', 'Te amo mais q o Charlie', '(づ｡◕‿‿◕｡)づ', f'Você sabia? existem {len(mensagens)} diferentes, será que já repetiu alguma?', 'Sem mensagens, só beijinhos', 'Te amo tanto que todo fim de seção eu coloco umas mensagens extras, será que um dia vc vai ler todas?', 'Se você receber esta mensagem na seção, eu te devo uma salada do tasty (resgatável apenas com print)', 'Como vão os alfaces?', 'Te amo amor ^^']
-            bot.send_message(message.chat.id, mensagens[randint(0, len(mensagens))])
+            print(str(message.chat.id)+'======')
+            if message.chat.id == 5266515916: 
+                mensagens = []
+                mensagens = ['Te amo, xuxu', 'MANDA A BRAZA AMOR', 'ARROMBA O CU DESSES BRUTAMONTES', 'Te amo mtmtmt', '(≧ω≦)', 'Quer me foder com esse tanto de aposta? (╹◡╹)凸', 'Lembra de tomar agua ^^', 'Eita, olha q gatinha', '(adiciona mais uma aposta aí, mas n conta pra ngm 😈)', '(✿◠‿◠)ヽ(´▽｀)ノ', 'Espero que esteja se divertindo ^^', 'vc é foda (☞ﾟ∀ﾟ)☞', '＼（＾○＾）人（＾○＾）／ LET\'S GOOOOOOOOOOOOO', 'Te amo S2', 'Amo mtmtmt vc', 'Sheeeeesh, como vou prestar atenção no jogo com uma gatinha dessas na mesa?', '(figurinha dos gatos abraçando)', '∑(゜Д゜;) TUDO ISSO?!', '~(^з^)-', '(ﾉ◕ヮ◕)ﾉ*:･ﾟ✧', 'Te amo mais q o Charlie', '(づ｡◕‿‿◕｡)づ', 'Sem mensagens, só beijinhos', 'Te amo tanto que todo fim de seção eu coloco umas mensagens extras, será que um dia vc vai ler todas?', 'Se você receber esta mensagem na seção, eu te devo uma salada do tasty (resgatável apenas com print)', 'Como vão os alfaces?', 'Te amo amor ^^']
+                mensagens.append(f'Você sabia que existem {len(mensagens)+1} mensagens diferentes? será que já repetiu alguma?')
+                print(f'mensagem personalizada de {len(mensagens)} mensagens')
+                bot.send_message(message.chat.id, mensagens[randint(0, len(mensagens))])
         except: pass
     
 

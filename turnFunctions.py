@@ -17,12 +17,7 @@ def finalizarIniciativa():
     turnosdb.truncate()
 
 def apresentarIniciativa():
-    iniciativa = []
-    for jogador in turnosdb:
-        iniciativa.append(jogador)
-
-    iniciativa = sorted(iniciativa, key=lambda jogador: jogador['apostas'], reverse=True)
-
+    iniciativa = computarIniciativa()
     iniciativaString = ''
     for jogador in iniciativa:
         print(jogador['apostas'], jogador['nome'])
@@ -30,10 +25,21 @@ def apresentarIniciativa():
 
     return iniciativaString
 
+def computarIniciativa():
+    iniciativa = []
+    for jogador in turnosdb:
+        iniciativa.append(jogador)
+
+    iniciativa = sorted(iniciativa, key=lambda jogador: jogador['apostas'], reverse=True)
+    return iniciativa
+
+
 def adicionarAposta(nome, quantidade):
     personagem = turnosdb.search(turno.nome == nome)
-    turnosdb.update({'apostas': (personagem[0]['apostas']+quantidade)}, turno.nome == nome) 
+    turnosdb.update({'apostas': (personagem[0]['apostas']+int(quantidade))}, turno.nome == nome) 
+
     return apresentarIniciativa()
+
 
 def adicionarNPC(nome):
     turnosdb.insert({'nome': nome, 'apostas': 0})
