@@ -23,8 +23,8 @@ def markup_jogador():
     markup.row_width = 2
     markup.add(InlineKeyboardButton('Adicionar PH ⭐️', callback_data='cb_ph'),
                InlineKeyboardButton('Adicionar Fortuna 💰', callback_data='cb_fortuna'),
-               InlineKeyboardButton('🚧Adicionar Aposta🚧', callback_data='cb_aposta'),
-               InlineKeyboardButton('🚧Ordem de Iniciativa🚧', callback_data='cb_iniciativa'),
+               InlineKeyboardButton('Adicionar Aposta 🔥', callback_data='cb_aposta'),
+               InlineKeyboardButton('Ordem de Iniciativa📜', callback_data='cb_iniciativa'),
                InlineKeyboardButton('Ficha 📰', callback_data='cb_ficha')
                )
     return markup
@@ -119,7 +119,7 @@ playerHandler = Jogador()
 #||------------------------||
 def enviarMensagem(nome, texto):
     playerID = playerHandler.getPlayerID(nome)
-    bot.send_message(playerID, texto)
+    bot.send_message(playerID, texto, parse_mode='HTML')
 
 #||------------------------||
 #||         HELP           ||
@@ -236,25 +236,14 @@ def callback_player(call):
     elif call.data == 'cb_fortuna':
         msg = bot.send_message(call.from_user.id, 'Quantos pontos quer adicionar? (números negativos são aceitos)')
         bot.register_next_step_handler(msg, atualizarFortuna)
-    elif call.data == 'cb_aposta' or call.data == 'cb_iniciativa': bot.send_message(call.from_user.id, '''Função ainda não disponível 
-┐(‘～`；)┌''', reply_markup=markup_jogador())
+    elif call.data == 'cb_aposta': 
+        msg = bot.send_message(call.from_user.id, 'Quantos pontos adicionar?')
+        bot.register_next_step_handler(msg, modificarApostaJogador)
+    elif call.data ==  'cb_iniciativa':
+        txt = apresentarIniciativa()
+        bot.send_message(call.from_user.id, f'Iniciativa: \n{txt}', reply_markup=markup_jogador())
 
-    else:         
-        ##TECLADO NUMERICO
-        for i in range(3):
-            if call.data == f'num_{(i*3)+1}':
-                callback_player.quantidade.append((i*3)+1)
-                quantidadeStr = quantidadeStr()
-                bot.edit_message_text(chat_id=call.from_user.id, text=quantidadeStr, message_id=callback_player.mensagemID)
-        if call.data == 'num_0':
-            callback_player.quantidade.append(0)
-            quantidadeStr = quantidadeStr()
-            bot.edit_message_text(chat_id=call.from_user.id, text=quantidadeStr, message_id=callback_player.mensagemID)
-        elif call.data == 'num_apagar':
-            callback_player.quantidade.pop()
-            quantidadeStr = quantidadeStr()
-            bot.edit_message_text(chat_id=call.from_user.id, text=quantidadeStr, message_id=callback_player.mensagemID)
-        return ContinueHandling()
+    else: return ContinueHandling()
 
 #------------------------
 #    Funções de ficha  
@@ -282,7 +271,9 @@ def atualizarFortuna(message):
         return
     data = playerHandler.adicionarFortuna(message.from_user.id, quantia)
     return bot.send_message(message.from_user.id, f'<b>Fortuna:</b> {data[0]} → {data[1]}', 'HTML', reply_markup=markup_jogador())
-    
+def modificarApostaJogador(message):
+    txt = adicionarApostaId(message.from_user.id, message.text)
+    bot.send_message(message.from_user.id, f'Iniciativa:\n {txt}', reply_markup=markup_jogador())
 #||------------------------||
 #||      ÁREA DA FICHA     ||
 #||------------------------||
@@ -315,11 +306,11 @@ def callback_mestre(call):
 
     if call.data == 'cb_reset':
         callback_mestre.listaJogadores = []
-        bot.send_message(call.from_user.id, 'Quais jogadores deseja resetar? ("all" para todos)', reply_markup=player_list_markup())
+        bot.send_message(call.from_user.id, 'Quais jogadores deseja resetar?', reply_markup=player_list_markup())
         #bot.register_next_step_handler(msg, resetHandler)
     elif  call.data == 'cb_give':
         callback_mestre.listaJogadores = []   
-        bot.send_message(call.from_user.id, 'Quais jogadores deseja resetar? ("all" para todos)', reply_markup=player_givelist_markup())
+        bot.send_message(call.from_user.id, 'Para quais jogadores deseja dar?', reply_markup=player_givelist_markup())
     elif  call.data == 'cb_jogadores':
         message = playerHandler.consultarJogadores(call)
         bot.send_message(call.from_user.id, message, 'HTML', reply_markup=markup_mestre())
@@ -346,6 +337,9 @@ def callback_mestre(call):
         print('LISTAJOGADORES:',callback_mestre.listaJogadores)
         txt = playerHandler.resetPJ('all', callback_mestre.listaJogadores)
         bot.send_message(call.from_user.id, txt, 'HTML', reply_markup=markup_mestre())
+        jogadores = playerHandler.getAllNames()
+        for jogador in jogadores:
+            enviarMensagem(jogador, f'')
     elif call.data == 'cb_resetFortuna': 
         print('LISTAJOGADORES:',callback_mestre.listaJogadores)
         txt = playerHandler.resetPJ('fortuna', callback_mestre.listaJogadores)
@@ -380,6 +374,7 @@ def callback_mestre(call):
         txt = abrirIniciativa(callback_mestre.listaJogadores)
         bot.send_message(call.from_user.id, f'Jogadores em cena: \n{txt}', reply_markup=markup_iniciativa())
         for jogador in callback_mestre.listaJogadores:
+            print(jogador)
             enviarMensagem(jogador, f'A INICIATIVA ESTÁ FORMADA, ENVIEM SUAS APOSTAS: \n{txt}')
     elif call.data == 'cb_inAllPlayers':
         callback_mestre.listaJogadores = playerHandler.getAllNames()
@@ -388,7 +383,9 @@ def callback_mestre(call):
     #ADICIONANDO APOSTAS
     elif call.data[-6:] == 'aposta':
         print('aaaaaa')
-        callback_mestre.nome = str(call.data[:7]) 
+        print(call.data[-6:])
+        print(str(call.data[:-7]))
+        callback_mestre.nome = str(call.data[:-7]) 
         msg = bot.send_message(call.from_user.id, f'Quantas apostas deseja dar para {callback_mestre.nome}')
         bot.register_next_step_handler(msg, modificarAposta)
 

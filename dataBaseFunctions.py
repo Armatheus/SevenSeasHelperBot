@@ -81,6 +81,14 @@ class Jogador():
     #||------------------------||
     #||      FUNÇÕES GET       ||
     #||------------------------||
+    def getName(self, id):
+        pj = pjdb.get(doc_id=id)
+        return pj['rg']['jogadorNome']
+    
+    def getFicha(self, id):
+        pj = pjdb.get(jogador.chatID==id)
+        return pj
+    
     def getIDs(self):
         return pjdb.get(jogador.IDs.exists())['IDs']
     
@@ -205,3 +213,8 @@ class Jogador():
 
 
     #===========
+'''pedro = Jogador()
+print(pedro.getFichasCriadas())
+print(pedro.getAllNames())
+print(pedro.getName(1))
+print(pedro.getFicha(1486739015))'''

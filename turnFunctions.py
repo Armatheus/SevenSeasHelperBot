@@ -1,6 +1,7 @@
 from tinydb import TinyDB, Query
 from tinydb.operations import *
-import random
+from dataBaseFunctions import Jogador
+#import random
 
 turnosdb = TinyDB('TurnosDb')
 turno = Query()
@@ -35,6 +36,17 @@ def computarIniciativa():
 
 
 def adicionarAposta(nome, quantidade):
+    personagem = turnosdb.search(turno.nome == nome)
+    turnosdb.update({'apostas': (personagem[0]['apostas']+int(quantidade))}, turno.nome == nome) 
+
+    return apresentarIniciativa()
+
+def adicionarApostaId(id, quantidade):
+    playerHandler = Jogador()
+    ficha = playerHandler.getFicha(id)
+    nome = ficha['rg']['jogadorNome']    
+
+
     personagem = turnosdb.search(turno.nome == nome)
     turnosdb.update({'apostas': (personagem[0]['apostas']+int(quantidade))}, turno.nome == nome) 
 
